@@ -1,70 +1,65 @@
 # Ouroboros Pose Editor
 
-A dependency-free, browser-based pose editor for creating and refining an ouroboros composition around Earth.
+A dependency-free, browser-based pose editor for composing an ouroboros around Earth.
 
-The editor is built as a single `index.html` file using HTML, CSS, JavaScript, and Canvas 2D.
+**Current version: v8**  
+**Main implementation:** HTML + CSS + vanilla JavaScript + Canvas 2D  
+**Build step:** none
 
-## Features
+## Current status
 
-- Touch, mouse, trackpad, and keyboard controls
-- Individual spline point editing
-- Add/delete/duplicate control points
-- Whole-snake move and viewport pan modes
-- Pinch zoom and pointer-centred wheel zoom
-- Depth and perspective controls
-- Per-point width controls
-- Earth and Moon positioning
-- Earth/self-occlusion diagnostics
-- Manual topology overrides
+`main` contains the current v8 editor as a single `index.html` file. The app runs directly in a modern browser and is designed for touch, mouse, trackpad, and keyboard use.
+
+The version history of `index.html` is preserved sequentially as **v5 → v6 → v7 → v8**.
+
+The substantially different v6 Three.js/WebGL experiment is also preserved on the `threejs-prototype` branch.
+
+## v8 highlights
+
+- Edit / Move / Pan modes
+- 0–14 depth system and adjustable perspective
+- Earth and Moon positioning/depth controls
+- Earth and self-occlusion diagnostics
+- Manual crossing/topology overrides
+- Per-point width and contact states
 - Head, eye, gaze, mouth, neck, and tail controls
-- Lighting and illustration shadows
-- Reference and closure guides
-- Undo/redo
-- Autosave
-- Named checkpoints
-- JSON import/export
+- Touch gestures plus mouse/trackpad/keyboard controls
+- Undo/redo, autosave, checkpoints, and JSON import/export
 - Clean and diagnostic snapshots
+- Slider − / + controls with exact numeric entry
 
-## Run locally
+Length Lock and the pixel-art post-process were intentionally removed.
 
-No build process or dependencies are required.
+## Run
+
+No dependencies, package manager, build process, or server are required.
 
 Open `index.html` directly in a modern browser.
 
 ## GitHub Pages
 
-This repository can be published directly with GitHub Pages:
+This repository can be published directly as a GitHub Pages project site from **`main` → `/(root)`**.
 
-1. Open **Settings → Pages**
-2. Choose **Deploy from a branch**
-3. Select `main`
-4. Select `/(root)`
-
-The live site will then be available at:
+When enabled, the site is:
 
 `https://raskal-labs.github.io/ouroboros/`
 
-## Project structure
+Because Pages can publish this repository directly, future commits to `main`—for example v9 replacing `index.html`—will automatically become the live version after GitHub Pages redeploys. No copy in `raskal-labs.github.io` is required.
 
-    ouroboros/
-    ├── index.html
-    ├── README.md
-    ├── LICENSE
-    └── .gitignore
+## Repository layout
 
-## Development
+```text
+ouroboros/
+├── index.html
+├── README.md
+├── LICENSE
+└── .gitignore
+```
 
-For now, the application intentionally remains a single-file project.
+## Branches
 
-This keeps it easy to:
-
-- run offline
-- upload to GitHub Pages
-- test on mobile
-- copy between editors
-- preserve dependency-free operation
-
-If the project becomes substantially larger, the JavaScript and CSS can be split into modules later without changing the browser-based architecture.
+- `main` — current Canvas 2D editor, currently v8
+- `threejs-prototype` — preserved v6 Three.js/WebGL experiment
 
 ## License
 
