@@ -1,0 +1,50 @@
+#endpointControls.v1-always-visible,
+#endpointControls.v1-always-visible #headControls,
+#endpointControls.v1-always-visible #tailControls{
+  display:block!important;
+}
+
+#endpointControls.v1-always-visible #endpointTitle{
+  display:none;
+}
+
+.v1EndpointHeading{
+  margin:8px 0 7px;
+  font-size:11px;
+  font-weight:800;
+  opacity:.9;
+}
+
+.v1PerspectiveHelp{
+  margin:-2px 0 9px 74px;
+  font-size:10px;
+  line-height:1.35;
+  opacity:.68;
+}
+
+.numericRow.v1HasReset{
+  grid-template-columns:66px 28px minmax(58px,1fr) 28px 62px 28px;
+  gap:4px;
+}
+
+.v1ResetButton{
+  min-width:28px;
+  width:28px;
+  min-height:30px;
+  height:30px;
+  padding:0;
+  font-size:14px;
+}
+
+@media (max-width:380px){
+  .numericRow.v1HasReset{
+    grid-template-columns:58px 26px minmax(48px,1fr) 26px 56px 26px;
+    gap:3px;
+  }
+  .numericRow.v1HasReset .numericInput{
+    width:56px;
+  }
+  .v1PerspectiveHelp{
+    margin-left:58px;
+  }
+}
