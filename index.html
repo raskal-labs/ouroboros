@@ -1,450 +1,369 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-<title>Poseable Ouroboros Reference</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Poseable Ouroboros — Occlusion View</title>
 <style>
-  :root {
-    color-scheme: dark;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  }
-  html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #111;
-    touch-action: none;
-  }
-  #app { position: fixed; inset: 0; }
-  canvas { display: block; width: 100%; height: 100%; }
-  #toolbar {
-    position: fixed;
-    left: max(10px, env(safe-area-inset-left));
-    right: max(10px, env(safe-area-inset-right));
-    bottom: calc(10px + env(safe-area-inset-bottom));
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0,1fr));
-    gap: 8px;
-    z-index: 10;
-  }
-  button, input {
-    font: inherit;
-  }
-  button {
-    min-height: 44px;
-    border: 0;
-    border-radius: 12px;
-    padding: 8px 10px;
-    background: rgba(245,245,245,.92);
-    color: #111;
-    font-weight: 600;
-  }
-  button.active {
-    background: #9bd7ff;
-  }
-  #panel {
-    position: fixed;
-    top: calc(10px + env(safe-area-inset-top));
-    left: max(10px, env(safe-area-inset-left));
-    right: max(10px, env(safe-area-inset-right));
-    z-index: 10;
-    background: rgba(20,20,24,.82);
-    backdrop-filter: blur(14px);
-    border: 1px solid rgba(255,255,255,.14);
-    border-radius: 14px;
-    padding: 10px 12px;
-    max-width: 560px;
-  }
-  #title { font-weight: 700; margin-bottom: 4px; }
-  #help {
-    font-size: 13px;
-    line-height: 1.3;
-    opacity: .82;
-  }
-  #depthRow {
-    margin-top: 8px;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 8px;
-    align-items: center;
-    font-size: 13px;
-  }
-  #depth { width: 100%; }
-  #status {
-    margin-top: 6px;
-    font-size: 12px;
-    opacity: .72;
-  }
-  @media (min-width: 700px) {
-    #toolbar { left: 10px; right: auto; width: 520px; }
-  }
+:root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0b0c10}
+body{touch-action:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#top{position:fixed;z-index:5;top:calc(8px + env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));padding:9px 11px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(18,19,24,.84);backdrop-filter:blur(10px)}
+#title{font-size:15px;font-weight:700}
+#help{margin-top:3px;font-size:11px;line-height:1.25;opacity:.8}
+#depthRow{display:grid;grid-template-columns:auto 1fr 48px;gap:8px;align-items:center;margin-top:7px;font-size:12px}
+input[type=range]{width:100%}
+#bottom{position:fixed;z-index:5;left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));bottom:calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+button{min-height:42px;border:0;border-radius:11px;background:#ececef;color:#111;font-weight:700;font-size:12px;padding:7px 4px}
+button.active{background:#92d3ff}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<canvas id="c"></canvas>
 
-<div id="panel">
-  <div id="title">Poseable Ouroboros</div>
+<div id="top">
+  <div id="title">Poseable Ouroboros — occlusion view</div>
   <div id="help">
-    <b>Edit:</b> drag the white control points. Use the depth slider to move the selected point in front of or behind Earth.
-    <b>Orbit:</b> rotate the whole scene with one finger; pinch to zoom.
+    Solid green = visible. Purple hashed = hidden behind Earth or another part of the snake.
+    Closer sections automatically appear thicker; farther sections thinner.
   </div>
   <div id="depthRow">
     <span>Depth</span>
-    <input id="depth" type="range" min="-4.5" max="4.5" step="0.05" value="0">
-    <span id="depthValue">0.00</span>
+    <input id="depth" type="range" min="-4" max="4" step=".05" value="0">
+    <span id="dv">—</span>
   </div>
-  <div id="status">Tap a control point to select it.</div>
 </div>
 
-<div id="toolbar">
-  <button id="editBtn" class="active">Edit</button>
-  <button id="orbitBtn">Orbit</button>
-  <button id="addBtn">Add point</button>
-  <button id="deleteBtn">Delete</button>
-  <button id="earthBtn">Earth solid</button>
-  <button id="pointsBtn">Points on</button>
-  <button id="resetBtn">Reset</button>
-  <button id="shotBtn">Snapshot</button>
+<div id="bottom">
+  <button id="edit" class="active">Edit</button>
+  <button id="orbit">Orbit</button>
+  <button id="add">Add point</button>
+  <button id="del">Delete</button>
+  <button id="ghost">Earth solid</button>
+  <button id="pts">Points on</button>
+  <button id="xray" class="active">Occlusion on</button>
+  <button id="reset">Reset</button>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
 <script>
 (() => {
-  const app = document.getElementById('app');
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b0c12);
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const depth=document.getElementById('depth'),dv=document.getElementById('dv');
 
-  const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.1, 100);
-  camera.position.set(0.2, 2.2, 11.5);
+let W=0,H=0,dpr=1,scale=1,cx=0,cy=0;
+let yaw=-0.05,pitch=0.08,zoom=1,mode='edit',showPoints=true,showOcclusion=true;
+let selected=-1,dragging=false,lastX=0,lastY=0,pinchStart=0,zoomStart=1;
 
-  const renderer = new THREE.WebGLRenderer({ antialias:true, preserveDrawingBuffer:true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setSize(innerWidth, innerHeight);
-  app.appendChild(renderer.domElement);
+const earth={x:-.45,y:-.25,z:0,r:2.15,alpha:1};
 
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x303040, 2.2));
-  const key = new THREE.DirectionalLight(0xffffff, 2.3);
-  key.position.set(5, 6, 8);
-  scene.add(key);
+const initial=[
+[-1.45,2.20,.90],[-2.20,1.70,.60],[-3.10,.85,.10],[-3.40,-.40,.50],
+[-2.90,-1.75,1.15],[-1.65,-2.55,2.05],[-.05,-2.75,2.55],[1.45,-2.45,2.10],
+[2.45,-1.55,1.30],[2.70,-.15,.15],[2.15,1.10,-1.15],[1.05,1.80,-1.90],[.05,2.05,-1.35]
+];
+let pts=initial.map(p=>p.slice());
 
-  // Earth
-  const earthMat = new THREE.MeshPhongMaterial({
-    color: 0x6b8bb8,
-    shininess: 12,
-    transparent: true,
-    opacity: 1
-  });
-  const earth = new THREE.Mesh(new THREE.SphereGeometry(2.25, 64, 40), earthMat);
-  earth.position.set(-0.55, -0.25, 0);
-  scene.add(earth);
+function resize(){
+ dpr=Math.min(devicePixelRatio||1,2); W=innerWidth; H=innerHeight;
+ canvas.width=Math.floor(W*dpr); canvas.height=Math.floor(H*dpr);
+ canvas.style.width=W+'px'; canvas.style.height=H+'px';
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ scale=Math.min(W,H)*.105*zoom; cx=W*.46; cy=H*.52; draw();
+}
 
-  // Simple latitude/longitude wire overlay
-  const wire = new THREE.Mesh(
-    new THREE.SphereGeometry(2.265, 24, 16),
-    new THREE.MeshBasicMaterial({ color:0xcad8ef, wireframe:true, transparent:true, opacity:.10 })
-  );
-  wire.position.copy(earth.position);
-  scene.add(wire);
+function rot(p){
+ let [x,y,z]=p;
+ const cyw=Math.cos(yaw),syw=Math.sin(yaw);
+ const x1=x*cyw-z*syw,z1=x*syw+z*cyw;
+ const cp=Math.cos(pitch),sp=Math.sin(pitch);
+ return [x1,y*cp-z1*sp,y*sp+z1*cp];
+}
+function proj(p){
+ const [x,y,z]=rot(p);
+ const persp=1/(1+z*.045);
+ return {x:cx+x*scale*persp,y:cy-y*scale*persp,z,persp};
+}
+function earthScreen(){
+ const p=proj([earth.x,earth.y,earth.z]);
+ return {...p,r:earth.r*scale*p.persp};
+}
 
-  // A few tiny stars for orientation
-  const starGeo = new THREE.BufferGeometry();
-  const starPos = [];
-  for (let i=0;i<350;i++) {
-    const r = 22;
-    const v = new THREE.Vector3(
-      (Math.random()-.5)*r,
-      (Math.random()-.5)*r,
-      -8 - Math.random()*8
-    );
-    starPos.push(v.x,v.y,v.z);
-  }
-  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos,3));
-  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({color:0xffffff,size:.035})));
+function catmull(a,b,c,d,t){
+ const t2=t*t,t3=t2*t;
+ return [
+ .5*(2*b[0]+(-a[0]+c[0])*t+(2*a[0]-5*b[0]+4*c[0]-d[0])*t2+(-a[0]+3*b[0]-3*c[0]+d[0])*t3),
+ .5*(2*b[1]+(-a[1]+c[1])*t+(2*a[1]-5*b[1]+4*c[1]-d[1])*t2+(-a[1]+3*b[1]-3*c[1]+d[1])*t3),
+ .5*(2*b[2]+(-a[2]+c[2])*t+(2*a[2]-5*b[2]+4*c[2]-d[2])*t2+(-a[2]+3*b[2]-3*c[2]+d[2])*t3)
+ ];
+}
+function sampleCurve(){
+ const out=[];
+ for(let i=0;i<pts.length-1;i++){
+   const a=pts[Math.max(0,i-1)],b=pts[i],c=pts[i+1],d=pts[Math.min(pts.length-1,i+2)];
+   for(let s=0;s<12;s++) out.push(catmull(a,b,c,d,s/12));
+ }
+ out.push(pts[pts.length-1].slice());
+ return out;
+}
 
-  const snakeMat = new THREE.MeshPhongMaterial({
-    color: 0x91a86f,
-    shininess: 18
-  });
-  const headMat = new THREE.MeshPhongMaterial({ color: 0x9cad76, shininess: 18 });
-  const controlMat = new THREE.MeshBasicMaterial({ color:0xffffff });
-  const selectedMat = new THREE.MeshBasicMaterial({ color:0xffd166 });
+/* Larger camera-space z = farther away.
+   Width therefore gets smaller as z increases. */
+function widthFor(sp,index,total){
+ const tailTaper=1-.50*Math.pow(index/(total-1),6);
+ const depthScale=Math.max(.58,Math.min(1.55,1-sp.z*.11));
+ return .36*scale*tailTaper*depthScale;
+}
 
-  let initialPoints = [
-    [-1.65,  2.35,  0.85],  // head
-    [-2.55,  1.75,  0.25],
-    [-3.55,  0.85, -0.20],
-    [-3.75, -0.45,  0.55],
-    [-3.15, -1.95,  1.25],
-    [-1.85, -2.70,  2.15],
-    [-0.15, -2.95,  2.65],
-    [ 1.55, -2.55,  2.15],
-    [ 2.60, -1.55,  1.25],
-    [ 2.85, -0.10,  0.10],
-    [ 2.35,  1.15, -1.15],
-    [ 1.20,  1.95, -1.95],
-    [-0.05,  2.15, -1.45]  // tail near head, behind
-  ];
+function behindEarth(p){
+ if(earth.alpha<=.5) return false;
+ const sp=proj(p),e=earthScreen();
+ const dx=sp.x-e.x,dy=sp.y-e.y;
+ const rr=e.r*e.r,d2=dx*dx+dy*dy;
+ if(d2>=rr) return false;
 
-  let pts = [];
-  let controlsMeshes = [];
-  let snakeMesh = null;
-  let headMesh = null;
-  let tailMesh = null;
-  let selected = null;
-  let mode = 'edit';
-  let showPoints = true;
+ /* Approximate depth of the front hemisphere at this screen position.
+    Positive z is farther from camera here. */
+ const normalized=Math.sqrt(Math.max(0,1-d2/rr));
+ const frontSurfaceZ=e.z-earth.r*normalized;
+ return sp.z>frontSurfaceZ;
+}
 
-  const orbit = new THREE.OrbitControls(camera, renderer.domElement);
-  orbit.enableDamping = true;
-  orbit.target.set(-0.4, -0.2, 0);
-  orbit.enabled = false;
-  orbit.minDistance = 6;
-  orbit.maxDistance = 22;
+function classify(samples){
+ const screen=samples.map((p,i)=>{
+   const sp=proj(p);
+   return {...sp,p,i,w:widthFor(sp,i,samples.length),hiddenEarth:behindEarth(p),hiddenSelf:false};
+ });
 
-  const raycaster = new THREE.Raycaster();
-  const pointer = new THREE.Vector2();
-  const dragPlane = new THREE.Plane();
-  const intersection = new THREE.Vector3();
-  const cameraDir = new THREE.Vector3();
-  let dragging = false;
-  let dragIndex = -1;
+ /* Screen-space self-occlusion.
+    If two non-neighbouring pieces overlap, the farther one is marked hidden.
+    This is intentionally visual rather than physically exact, which is useful
+    for a pose-reference tool. */
+ for(let i=0;i<screen.length;i++){
+   for(let j=i+10;j<screen.length;j++){
+     const a=screen[i],b=screen[j];
+     const dx=a.x-b.x,dy=a.y-b.y;
+     const threshold=(a.w+b.w)*.44;
+     if(dx*dx+dy*dy<threshold*threshold){
+       if(a.z>b.z+.06) a.hiddenSelf=true;
+       else if(b.z>a.z+.06) b.hiddenSelf=true;
+     }
+   }
+ }
+ return screen;
+}
 
-  function makeControl(p, i) {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(.13, 18, 14), controlMat.clone());
-    m.position.copy(p);
-    m.userData.index = i;
-    scene.add(m);
-    return m;
-  }
+function drawStars(){
+ ctx.fillStyle='rgba(255,255,255,.45)';
+ for(let i=0;i<95;i++) ctx.fillRect((i*137.5)%W,(i*83.3)%H,1.1,1.1);
+}
 
-  function rebuildControls() {
-    controlsMeshes.forEach(m => scene.remove(m));
-    controlsMeshes = pts.map((p,i) => makeControl(p,i));
-    setPointsVisibility();
-    updateSelectionVisual();
-  }
+function drawEarth(){
+ const e=earthScreen();
+ const g=ctx.createRadialGradient(e.x-e.r*.35,e.y-e.r*.4,e.r*.1,e.x,e.y,e.r);
+ g.addColorStop(0,`rgba(132,170,205,${earth.alpha})`);
+ g.addColorStop(.62,`rgba(77,119,158,${earth.alpha})`);
+ g.addColorStop(1,`rgba(28,50,75,${earth.alpha})`);
+ ctx.fillStyle=g; ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill();
+ ctx.strokeStyle=`rgba(210,225,240,${.55*earth.alpha})`;ctx.lineWidth=2;ctx.stroke();
 
-  function setPointsVisibility() {
-    controlsMeshes.forEach(m => m.visible = showPoints);
-  }
+ ctx.fillStyle=`rgba(125,151,83,${.82*earth.alpha})`;
+ for(const [bx,by,rx,ry] of [[-.55,-.5,.55,.32],[.3,-.2,.65,.38],[-.1,.55,.48,.25]]){
+   ctx.beginPath();ctx.ellipse(e.x+bx*e.r,e.y+by*e.r,rx*e.r,ry*e.r,.25,0,Math.PI*2);ctx.fill();
+ }
+}
 
-  function rebuildSnake() {
-    if (snakeMesh) scene.remove(snakeMesh);
-    if (headMesh) scene.remove(headMesh);
-    if (tailMesh) scene.remove(tailMesh);
+function drawSegment(a,b,hidden){
+ const w=(a.w+b.w)/2;
+ ctx.lineCap='round';ctx.lineJoin='round';
 
-    const curve = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.45);
-    snakeMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 220, .34, 14, false), snakeMat);
-    scene.add(snakeMesh);
+ if(hidden && showOcclusion){
+   /* Inverted/contrasting hidden body */
+   ctx.strokeStyle='#9d70c9';
+   ctx.lineWidth=w;
+   ctx.setLineDash([Math.max(5,w*.30),Math.max(5,w*.22)]);
+   ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+   ctx.setLineDash([]);
 
-    // Head = slightly elongated ellipsoid at first point
-    headMesh = new THREE.Mesh(new THREE.SphereGeometry(.52, 28, 20), headMat);
-    headMesh.scale.set(1.15, .85, .85);
-    headMesh.position.copy(pts[0]);
-    const headDir = pts[1].clone().sub(pts[0]).normalize();
-    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1,0,0), headDir);
-    headMesh.quaternion.copy(q);
-    scene.add(headMesh);
+   /* diagonal hash marks */
+   const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy);
+   if(L>2){
+     const ux=dx/L,uy=dy/L,nx=-uy,ny=ux;
+     const step=Math.max(10,w*.42);
+     ctx.strokeStyle='rgba(240,220,255,.82)';
+     ctx.lineWidth=Math.max(1.4,w*.055);
+     for(let d=step*.5;d<L;d+=step){
+       const x=a.x+ux*d,y=a.y+uy*d,s=w*.52;
+       ctx.beginPath();
+       ctx.moveTo(x-nx*s*.55-ux*s*.35,y-ny*s*.55-uy*s*.35);
+       ctx.lineTo(x+nx*s*.55+ux*s*.35,y+ny*s*.55+uy*s*.35);
+       ctx.stroke();
+     }
+   }
+ }else{
+   ctx.setLineDash([]);
+   ctx.strokeStyle='#8ea66c';
+   ctx.lineWidth=w;
+   ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+   ctx.strokeStyle='rgba(35,45,28,.42)';
+   ctx.lineWidth=Math.max(1,w*.07);
+   ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+ }
+}
 
-    // Tail = cone attached at last point, aligned with final segment
-    const tailDir = pts[pts.length-1].clone().sub(pts[pts.length-2]).normalize();
-    tailMesh = new THREE.Mesh(new THREE.ConeGeometry(.34, 1.15, 18), snakeMat);
-    tailMesh.position.copy(pts[pts.length-1]).addScaledVector(tailDir, .45);
-    // Cone points +Y; rotate +Y to tail direction.
-    tailMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), tailDir);
-    scene.add(tailMesh);
-  }
+function drawSnake(screen){
+ /* Hidden pieces first so visible crossing pieces naturally cover them. */
+ for(let pass=0;pass<2;pass++){
+   for(let i=1;i<screen.length;i++){
+     const a=screen[i-1],b=screen[i];
+     const hidden=a.hiddenEarth||b.hiddenEarth||a.hiddenSelf||b.hiddenSelf;
+     if((pass===0)!==hidden) continue;
+     drawSegment(a,b,hidden);
+   }
+ }
+}
 
-  function updateAll() {
-    controlsMeshes.forEach((m,i) => m.position.copy(pts[i]));
-    rebuildSnake();
-    updateDepthUI();
-  }
+function drawHead(screen){
+ const p=screen[0],p2=screen[1],ang=Math.atan2(p.y-p2.y,p.x-p2.x);
+ const hidden=p.hiddenEarth||p.hiddenSelf;
+ ctx.save();ctx.translate(p.x,p.y);ctx.rotate(ang);
+ ctx.fillStyle=hidden&&showOcclusion?'#9d70c9':'#9dad78';
+ ctx.strokeStyle=hidden&&showOcclusion?'#f0dcff':'#263020';ctx.lineWidth=2;
+ ctx.setLineDash(hidden&&showOcclusion?[8,6]:[]);
+ ctx.beginPath();ctx.ellipse(0,0,p.w*1.42,p.w*.92,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+ ctx.setLineDash([]);
+ ctx.fillStyle='#111';ctx.beginPath();ctx.arc(p.w*.25,-p.w*.23,Math.max(2,p.w*.1),0,Math.PI*2);ctx.fill();
+ ctx.restore();
+}
 
-  function reset() {
-    pts = initialPoints.map(p => new THREE.Vector3(...p));
-    selected = null;
-    rebuildControls();
-    rebuildSnake();
-    updateDepthUI();
-    document.getElementById('status').textContent = 'Reset. Tap a control point to select it.';
-  }
+function drawTail(screen){
+ const n=screen.length,p=screen[n-1],q=screen[n-2];
+ const dx=p.x-q.x,dy=p.y-q.y,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L,nx=-uy,ny=ux,w=p.w*.9;
+ const hidden=p.hiddenEarth||p.hiddenSelf;
+ ctx.fillStyle=hidden&&showOcclusion?'#9d70c9':'#8ea66c';
+ ctx.strokeStyle=hidden&&showOcclusion?'#f0dcff':'#263020';ctx.lineWidth=2;
+ ctx.beginPath();
+ ctx.moveTo(p.x+ux*w*1.35,p.y+uy*w*1.35);
+ ctx.lineTo(p.x-ux*w*.55+nx*w,p.y-uy*w*.55+ny*w);
+ ctx.lineTo(p.x-ux*w*.55-nx*w,p.y-uy*w*.55-ny*w);
+ ctx.closePath();ctx.fill();ctx.stroke();
+}
 
-  function setMode(next) {
-    mode = next;
-    orbit.enabled = (mode === 'orbit');
-    document.getElementById('editBtn').classList.toggle('active', mode==='edit');
-    document.getElementById('orbitBtn').classList.toggle('active', mode==='orbit');
-    document.getElementById('status').textContent =
-      mode === 'edit'
-      ? 'Edit mode: drag white points; use Depth for front/behind.'
-      : 'Orbit mode: rotate with one finger; pinch to zoom.';
-  }
+function drawPoints(){
+ if(!showPoints)return;
+ pts.forEach((p,i)=>{
+   const s=proj(p);
+   ctx.fillStyle=i===selected?'#ffd166':'#fff';ctx.strokeStyle='#111';ctx.lineWidth=2;
+   ctx.beginPath();ctx.arc(s.x,s.y,i===selected?9:7,0,Math.PI*2);ctx.fill();ctx.stroke();
+ });
+}
 
-  function updateSelectionVisual() {
-    controlsMeshes.forEach((m,i) => {
-      m.material.color.set(i === selected ? 0xffd166 : 0xffffff);
-      m.scale.setScalar(i === selected ? 1.35 : 1);
-    });
-  }
+function draw(){
+ ctx.clearRect(0,0,W,H);drawStars();
+ const sampled=sampleCurve(),screen=classify(sampled);
 
-  function updateDepthUI() {
-    const slider = document.getElementById('depth');
-    const val = document.getElementById('depthValue');
-    if (selected == null || !pts[selected]) {
-      slider.disabled = true;
-      val.textContent = '—';
-    } else {
-      slider.disabled = false;
-      slider.value = pts[selected].z;
-      val.textContent = Number(pts[selected].z).toFixed(2);
-    }
-  }
+ /* Draw back/hidden snake, then Earth, then foreground snake.
+    Because drawSnake itself uses two passes, we split by Earth state here. */
+ const hiddenOnly=screen.map(s=>({...s,hiddenSelf:s.hiddenSelf}));
 
-  function eventXY(e) {
-    const t = e.touches && e.touches[0];
-    return { x: t ? t.clientX : e.clientX, y: t ? t.clientY : e.clientY };
-  }
+ /* snake portions behind Earth shown through Earth only in ghost mode;
+    otherwise Earth will cover them and hashes reappear at edges/self-crossings. */
+ drawSnake(screen);
+ drawEarth();
 
-  function setPointerFromEvent(e) {
-    const p = eventXY(e);
-    pointer.x = (p.x / innerWidth) * 2 - 1;
-    pointer.y = -(p.y / innerHeight) * 2 + 1;
-  }
+ /* Redraw only pieces not behind Earth so they sit on top of Earth. */
+ for(let i=1;i<screen.length;i++){
+   const a=screen[i-1],b=screen[i];
+   if(a.hiddenEarth||b.hiddenEarth) continue;
+   drawSegment(a,b,a.hiddenSelf||b.hiddenSelf);
+ }
+ drawHead(screen);drawTail(screen);drawPoints();
+}
 
-  function pointerDown(e) {
-    if (mode !== 'edit' || !showPoints) return;
-    if (e.touches && e.touches.length > 1) return;
-    setPointerFromEvent(e);
-    raycaster.setFromCamera(pointer, camera);
-    const hits = raycaster.intersectObjects(controlsMeshes.filter(m=>m.visible), false);
-    if (!hits.length) return;
-    e.preventDefault();
-    dragging = true;
-    dragIndex = hits[0].object.userData.index;
-    selected = dragIndex;
-    updateSelectionVisual();
-    updateDepthUI();
+function nearestPoint(x,y){
+ let best=-1,bd=Infinity;
+ pts.forEach((p,i)=>{const s=proj(p),d=(s.x-x)**2+(s.y-y)**2;if(d<bd){bd=d;best=i;}});
+ return bd<34*34?best:-1;
+}
+function ptXY(e){
+ if(e.touches&&e.touches[0])return[e.touches[0].clientX,e.touches[0].clientY];
+ return[e.clientX,e.clientY];
+}
+function down(e){
+ if(e.touches&&e.touches.length===2){
+   pinchStart=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+   zoomStart=zoom;return;
+ }
+ const[x,y]=ptXY(e);lastX=x;lastY=y;
+ if(mode==='edit'){const n=nearestPoint(x,y);if(n>=0){selected=n;dragging=true;syncDepth();draw();}}
+ else dragging=true;
+ e.preventDefault();
+}
+function move(e){
+ if(e.touches&&e.touches.length===2&&pinchStart){
+   const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+   zoom=Math.max(.55,Math.min(2.2,zoomStart*d/pinchStart));
+   scale=Math.min(W,H)*.105*zoom;draw();e.preventDefault();return;
+ }
+ if(!dragging)return;
+ const[x,y]=ptXY(e),dx=x-lastX,dy=y-lastY;lastX=x;lastY=y;
+ if(mode==='edit'&&selected>=0){
+   pts[selected][0]+=dx/scale;pts[selected][1]-=dy/scale;
+ }else if(mode==='orbit'){
+   yaw+=dx*.008;pitch=Math.max(-1.2,Math.min(1.2,pitch+dy*.008));
+ }
+ draw();e.preventDefault();
+}
+function up(){dragging=false;pinchStart=0}
 
-    camera.getWorldDirection(cameraDir);
-    dragPlane.setFromNormalAndCoplanarPoint(cameraDir, pts[dragIndex]);
-    document.getElementById('status').textContent =
-      'Selected point ' + (dragIndex+1) + '. Drag it; Depth moves it front/back.';
-  }
+canvas.addEventListener('touchstart',down,{passive:false});
+canvas.addEventListener('touchmove',move,{passive:false});
+canvas.addEventListener('touchend',up,{passive:false});
+canvas.addEventListener('pointerdown',down,{passive:false});
+canvas.addEventListener('pointermove',move,{passive:false});
+canvas.addEventListener('pointerup',up);
 
-  function pointerMove(e) {
-    if (!dragging || dragIndex < 0 || mode !== 'edit') return;
-    e.preventDefault();
-    setPointerFromEvent(e);
-    raycaster.setFromCamera(pointer, camera);
-    if (raycaster.ray.intersectPlane(dragPlane, intersection)) {
-      // Keep current Z so the depth slider has an intuitive role.
-      const oldZ = pts[dragIndex].z;
-      pts[dragIndex].copy(intersection);
-      pts[dragIndex].z = oldZ;
-      updateAll();
-    }
-  }
+function syncDepth(){
+ if(selected<0){depth.disabled=true;dv.textContent='—'}
+ else{depth.disabled=false;depth.value=pts[selected][2];dv.textContent=pts[selected][2].toFixed(2)}
+}
+depth.addEventListener('input',()=>{if(selected<0)return;pts[selected][2]=+depth.value;dv.textContent=(+depth.value).toFixed(2);draw()});
 
-  function pointerUp() {
-    dragging = false;
-    dragIndex = -1;
-  }
+function setMode(m){
+ mode=m;
+ document.getElementById('edit').classList.toggle('active',m==='edit');
+ document.getElementById('orbit').classList.toggle('active',m==='orbit');
+}
+document.getElementById('edit').onclick=()=>setMode('edit');
+document.getElementById('orbit').onclick=()=>setMode('orbit');
+document.getElementById('ghost').onclick=()=>{
+ earth.alpha=earth.alpha>.5?.22:1;
+ document.getElementById('ghost').textContent=earth.alpha>.5?'Earth solid':'Earth ghost';draw();
+};
+document.getElementById('pts').onclick=()=>{
+ showPoints=!showPoints;document.getElementById('pts').textContent=showPoints?'Points on':'Points off';draw();
+};
+document.getElementById('xray').onclick=()=>{
+ showOcclusion=!showOcclusion;
+ document.getElementById('xray').classList.toggle('active',showOcclusion);
+ document.getElementById('xray').textContent=showOcclusion?'Occlusion on':'Occlusion off';draw();
+};
+document.getElementById('reset').onclick=()=>{
+ pts=initial.map(p=>p.slice());selected=-1;yaw=-.05;pitch=.08;zoom=1;
+ scale=Math.min(W,H)*.105;syncDepth();draw();
+};
+document.getElementById('add').onclick=()=>{
+ if(selected<0)selected=Math.max(0,pts.length-2);
+ const i=Math.min(selected+1,pts.length-1),a=pts[i-1],b=pts[i];
+ pts.splice(i,0,[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2]);selected=i;syncDepth();draw();
+};
+document.getElementById('del').onclick=()=>{
+ if(selected<0||pts.length<=6)return;
+ pts.splice(selected,1);selected=Math.min(selected,pts.length-1);syncDepth();draw();
+};
 
-  renderer.domElement.addEventListener('pointerdown', pointerDown, {passive:false});
-  renderer.domElement.addEventListener('pointermove', pointerMove, {passive:false});
-  renderer.domElement.addEventListener('pointerup', pointerUp);
-  renderer.domElement.addEventListener('pointercancel', pointerUp);
-
-  // Touch fallback for some iOS versions
-  renderer.domElement.addEventListener('touchstart', pointerDown, {passive:false});
-  renderer.domElement.addEventListener('touchmove', pointerMove, {passive:false});
-  renderer.domElement.addEventListener('touchend', pointerUp, {passive:false});
-
-  document.getElementById('depth').addEventListener('input', e => {
-    if (selected == null) return;
-    pts[selected].z = parseFloat(e.target.value);
-    updateAll();
-  });
-
-  document.getElementById('editBtn').onclick = () => setMode('edit');
-  document.getElementById('orbitBtn').onclick = () => setMode('orbit');
-
-  document.getElementById('earthBtn').onclick = () => {
-    const translucent = earthMat.opacity > .5;
-    earthMat.opacity = translucent ? .22 : 1;
-    wire.material.opacity = translucent ? .18 : .10;
-    document.getElementById('earthBtn').textContent = translucent ? 'Earth ghost' : 'Earth solid';
-  };
-
-  document.getElementById('pointsBtn').onclick = () => {
-    showPoints = !showPoints;
-    setPointsVisibility();
-    document.getElementById('pointsBtn').textContent = showPoints ? 'Points on' : 'Points off';
-  };
-
-  document.getElementById('resetBtn').onclick = reset;
-
-  document.getElementById('addBtn').onclick = () => {
-    if (selected == null) {
-      selected = Math.max(0, pts.length-2);
-    }
-    const i = Math.min(selected+1, pts.length-1);
-    const a = pts[Math.max(0,i-1)];
-    const b = pts[Math.min(pts.length-1,i)];
-    const p = a.clone().lerp(b,.5);
-    pts.splice(i,0,p);
-    selected = i;
-    rebuildControls();
-    rebuildSnake();
-    updateDepthUI();
-  };
-
-  document.getElementById('deleteBtn').onclick = () => {
-    if (selected == null || pts.length <= 6) return;
-    pts.splice(selected,1);
-    selected = Math.min(selected, pts.length-1);
-    rebuildControls();
-    rebuildSnake();
-    updateDepthUI();
-  };
-
-  document.getElementById('shotBtn').onclick = () => {
-    // Temporarily hide controls for a clean reference image.
-    const prev = showPoints;
-    showPoints = false;
-    setPointsVisibility();
-    renderer.render(scene,camera);
-    const url = renderer.domElement.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'ouroboros-pose.png';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    showPoints = prev;
-    setPointsVisibility();
-  };
-
-  addEventListener('resize', () => {
-    camera.aspect = innerWidth/innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth,innerHeight);
-  });
-
-  reset();
-
-  function animate() {
-    requestAnimationFrame(animate);
-    orbit.update();
-    renderer.render(scene,camera);
-  }
-  animate();
+addEventListener('resize',resize);syncDepth();resize();
 })();
 </script>
 </body>
