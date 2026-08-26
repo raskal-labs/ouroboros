@@ -111,10 +111,9 @@ function installInterfaceControls() {
 
   $("panelModeToggle").addEventListener("click", () => {
     const sheet = $("sheet");
-    if (sheet) {
-      const r = sheet.getBoundingClientRect();
-      state.floatingWidth = r.width / (state.floating ? state.scale : 1);
-      state.floatingHeight = r.height / (state.floating ? state.scale : 1);
+    if (state.floating && sheet) {
+      state.floatingWidth = sheet.offsetWidth;
+      state.floatingHeight = sheet.offsetHeight;
     }
     state.floating = !state.floating;
     $("panelModeToggle").textContent = state.floating ? "Dock panel" : "Float panel";
@@ -233,12 +232,13 @@ function installResizePersistence() {
   if (!("ResizeObserver" in window)) return;
   const sheet = $("sheet"), menu = $("menu");
   if (sheet) new ResizeObserver(() => {
-    if (!state.floating) return;
+    if (!state.floating || sheet.offsetWidth <= 0 || sheet.offsetHeight <= 0) return;
     state.floatingWidth = sheet.offsetWidth;
     state.floatingHeight = sheet.offsetHeight;
     save();
   }).observe(sheet);
   if (menu) new ResizeObserver(() => {
+    if (menu.offsetWidth <= 0 || menu.offsetHeight <= 0) return;
     state.menuWidth = menu.offsetWidth;
     state.menuHeight = menu.offsetHeight;
     save();
