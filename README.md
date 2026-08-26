@@ -2,19 +2,19 @@
 
 A dependency-free, browser-based pose editor for composing an ouroboros around Earth.
 
-**Current version: v9**  
+**Current version: v9.1**  
 **Main implementation:** HTML + CSS + vanilla JavaScript + Canvas 2D  
 **Build step:** none
 
 ## Current status
 
-`main` contains the current v9 editor as a single `index.html` file. The app runs directly in a modern browser and is designed for touch, mouse, trackpad, and keyboard use.
+`main` contains the current v9.1 editor as a single `index.html` file. The app runs directly in a modern browser and is designed for touch, mouse, trackpad, and keyboard use.
 
-The version history of `index.html` is preserved sequentially as **v5 → v6 → v7 → v8 → v9**.
+The version history of `index.html` is preserved sequentially as **v5 → v6 → v7 → v8 → v9 → v9.1**.
 
 The substantially different v6 Three.js/WebGL experiment is also preserved on the `threejs-prototype` branch.
 
-## v9 highlights
+## v9.1 highlights
 
 - Edit / Move / Pan modes
 - 0–14 depth system and adjustable perspective
@@ -32,6 +32,7 @@ The substantially different v6 Three.js/WebGL experiment is also preserved on th
 - Safer long-press/drag state and unlocked-Earth hit testing
 - Horizontal Shift+wheel panning and pointer cleanup
 - Schema v9 separates head/tail state while retaining older import compatibility
+- Smooth connected body and outline ribbons without per-sample circular caps
 
 Length Lock and the pixel-art post-process were intentionally removed.
 
@@ -63,7 +64,7 @@ ouroboros/
 
 ## Branches
 
-- `main` — current Canvas 2D editor, currently v9
+- `main` — current Canvas 2D editor, currently v9.1
 - `threejs-prototype` — preserved v6 Three.js/WebGL experiment
 
 ## License
