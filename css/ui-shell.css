@@ -1,0 +1,122 @@
+:root{
+  --ui-panel-alpha:.62;
+  --ui-panel-scale:1;
+}
+
+#topbar,
+#sheet,
+#menu,
+#contextMenu{
+  background:rgb(18 19 24 / var(--ui-panel-alpha));
+}
+
+#sheet{
+  min-height:54px;
+  max-height:calc(100% - 76px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+
+#sheet.ui-resizing{
+  transition:none;
+}
+
+#sheetResizeHandle{
+  position:absolute;
+  z-index:3;
+  top:0;
+  left:54px;
+  right:54px;
+  height:10px;
+  cursor:ns-resize;
+  touch-action:none;
+}
+
+#sheetResizeHandle::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:3px;
+  width:38px;
+  height:3px;
+  border-radius:3px;
+  transform:translateX(-50%);
+  background:rgb(255 255 255 / .28);
+}
+
+#interfaceControls .uiCompactRow{
+  display:grid;
+  grid-template-columns:74px minmax(70px,1fr) 70px;
+  align-items:center;
+  gap:8px;
+  margin-bottom:9px;
+}
+
+#interfaceControls .uiCompactRow label{
+  font-size:11px;
+  opacity:.82;
+}
+
+#interfaceControls input[type="number"],
+#interfaceControls select{
+  min-height:30px;
+  border:1px solid rgb(255 255 255 / .14);
+  border-radius:8px;
+  background:#090b10;
+  color:#eee;
+  padding:4px 5px;
+  font:700 11px ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+
+#interfaceControls .uiButtonRow{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+}
+
+body.panel-floating #sheet{
+  left:var(--floating-left,14px);
+  right:auto;
+  bottom:var(--floating-bottom,14px);
+  width:var(--floating-width,min(390px,calc(100% - 28px)));
+  height:var(--floating-height,min(540px,70%));
+  transform:scale(var(--ui-panel-scale));
+  transform-origin:bottom left;
+  resize:both;
+  max-width:calc(100% - 14px);
+  overflow:hidden;
+}
+
+body.panel-floating #sheetHandle{
+  cursor:move;
+  touch-action:none;
+}
+
+#menu{
+  min-width:190px;
+  min-height:100px;
+  resize:both;
+}
+
+#menuDragHandle{
+  position:sticky;
+  z-index:2;
+  top:-7px;
+  margin:-7px -7px 5px;
+  padding:7px 9px 6px;
+  border-bottom:1px solid rgb(255 255 255 / .10);
+  border-radius:13px 13px 0 0;
+  background:rgb(18 19 24 / min(1,calc(var(--ui-panel-alpha) + .12)));
+  color:#eee;
+  font-size:10px;
+  font-weight:800;
+  text-align:center;
+  cursor:move;
+  touch-action:none;
+  user-select:none;
+}
+
+@media (max-width:480px){
+  body.panel-floating #sheet{
+    --floating-width:calc(100% - 20px);
+    left:var(--floating-left,10px);
+  }
+}
