@@ -1,6 +1,8 @@
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const fit = (v, min, max) => Math.min(Math.max(v, min), max);
 const STORAGE_KEY = "ouroborosPoseEditor.ui.v1";
+const EDGE = 8;
 
 const defaults = {
   opacity: 0.62,
@@ -27,6 +29,32 @@ function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
 }
 
+function floatingBounds() {
+  const scale = clamp(+state.scale || 1, .7, 1.35);
+  const maxWidth = Math.max(180, (innerWidth - EDGE * 2) / scale);
+  const maxHeight = Math.max(150, (innerHeight - EDGE * 2) / scale);
+  const minWidth = Math.min(260, maxWidth);
+  const minHeight = Math.min(180, maxHeight);
+  const width = fit(Number.isFinite(+state.floatingWidth) ? +state.floatingWidth : defaults.floatingWidth, minWidth, maxWidth);
+  const height = fit(Number.isFinite(+state.floatingHeight) ? +state.floatingHeight : defaults.floatingHeight, minHeight, maxHeight);
+  const scaledWidth = width * scale;
+  const scaledHeight = height * scale;
+  const left = fit(Number.isFinite(+state.floatingLeft) ? +state.floatingLeft : defaults.floatingLeft, EDGE, Math.max(EDGE, innerWidth - scaledWidth - EDGE));
+  const bottom = fit(Number.isFinite(+state.floatingBottom) ? +state.floatingBottom : defaults.floatingBottom, EDGE, Math.max(EDGE, innerHeight - scaledHeight - EDGE));
+  return {scale, width, height, left, bottom};
+}
+
+function menuBounds(menu) {
+  const maxWidth = Math.max(150, innerWidth - 12);
+  const width = fit(Number.isFinite(+state.menuWidth) ? +state.menuWidth : defaults.menuWidth, Math.min(190, maxWidth), maxWidth);
+  const measuredHeight = Number.isFinite(+state.menuHeight) ? +state.menuHeight : (menu?.offsetHeight || 240);
+  const maxHeight = Math.max(100, innerHeight - 20);
+  const height = fit(measuredHeight, Math.min(100, maxHeight), maxHeight);
+  const left = Number.isFinite(+state.menuLeft) ? fit(+state.menuLeft, 6, Math.max(6, innerWidth - width - 6)) : null;
+  const top = Number.isFinite(+state.menuTop) ? fit(+state.menuTop, 6, Math.max(6, innerHeight - height - 6)) : null;
+  return {width, height, left, top};
+}
+
 function applyState() {
   const root = document.documentElement;
   root.style.setProperty("--ui-panel-alpha", clamp(+state.opacity || defaults.opacity, .18, 1));
@@ -36,16 +64,22 @@ function applyState() {
   const sheet = $("sheet");
   if (sheet) {
     if (!state.floating && Number.isFinite(state.sheetHeight)) {
-      sheet.style.height = `${clamp(state.sheetHeight, 54, innerHeight - 90)}px`;
+      state.sheetHeight = fit(+state.sheetHeight, 54, Math.max(54, innerHeight - 90));
+      sheet.style.height = `${state.sheetHeight}px`;
       sheet.classList.add("expanded");
     } else if (!state.floating) {
       sheet.style.height = "";
     }
     if (state.floating) {
-      root.style.setProperty("--floating-left", `${clamp(state.floatingLeft, 0, Math.max(0, innerWidth - 100))}px`);
-      root.style.setProperty("--floating-bottom", `${clamp(state.floatingBottom, 0, Math.max(0, innerHeight - 100))}px`);
-      root.style.setProperty("--floating-width", `${clamp(state.floatingWidth, 260, Math.max(280, innerWidth - 10))}px`);
-      root.style.setProperty("--floating-height", `${clamp(state.floatingHeight, 180, Math.max(220, innerHeight - 20))}px`);
+      const b = floatingBounds();
+      state.floatingLeft = b.left;
+      state.floatingBottom = b.bottom;
+      state.floatingWidth = b.width;
+      state.floatingHeight = b.height;
+      root.style.setProperty("--floating-left", `${b.left}px`);
+      root.style.setProperty("--floating-bottom", `${b.bottom}px`);
+      root.style.setProperty("--floating-width", `${b.width}px`);
+      root.style.setProperty("--floating-height", `${b.height}px`);
       sheet.classList.add("expanded");
       const chevron = $("handleChevron");
       if (chevron) chevron.textContent = "⋮";
@@ -54,11 +88,16 @@ function applyState() {
 
   const menu = $("menu");
   if (menu) {
-    menu.style.width = `${clamp(state.menuWidth || 210, 190, Math.max(200, innerWidth - 12))}px`;
-    if (Number.isFinite(state.menuHeight)) menu.style.height = `${clamp(state.menuHeight, 100, Math.max(120, innerHeight - 20))}px`;
-    if (Number.isFinite(state.menuLeft) && Number.isFinite(state.menuTop)) {
-      menu.style.left = `${clamp(state.menuLeft, 6, Math.max(6, innerWidth - 120))}px`;
-      menu.style.top = `${clamp(state.menuTop, 6, Math.max(6, innerHeight - 80))}px`;
+    const b = menuBounds(menu);
+    state.menuWidth = b.width;
+    if (Number.isFinite(state.menuHeight)) state.menuHeight = b.height;
+    menu.style.width = `${b.width}px`;
+    if (Number.isFinite(state.menuHeight)) menu.style.height = `${b.height}px`;
+    if (b.left !== null && b.top !== null) {
+      state.menuLeft = b.left;
+      state.menuTop = b.top;
+      menu.style.left = `${b.left}px`;
+      menu.style.top = `${b.top}px`;
       menu.style.right = "auto";
     }
   }
@@ -112,8 +151,10 @@ function installInterfaceControls() {
   $("panelModeToggle").addEventListener("click", () => {
     const sheet = $("sheet");
     if (state.floating && sheet) {
-      state.floatingWidth = sheet.offsetWidth;
-      state.floatingHeight = sheet.offsetHeight;
+      const scaleNow = clamp(+state.scale || 1, .7, 1.35);
+      const rect = sheet.getBoundingClientRect();
+      state.floatingWidth = rect.width / scaleNow;
+      state.floatingHeight = rect.height / scaleNow;
     }
     state.floating = !state.floating;
     $("panelModeToggle").textContent = state.floating ? "Dock panel" : "Float panel";
@@ -154,7 +195,7 @@ function installSheetResize() {
   });
   handle.addEventListener("pointermove", e => {
     if (!active) return;
-    const next = clamp(startHeight + (startY - e.clientY), 54, innerHeight - 90);
+    const next = fit(startHeight + (startY - e.clientY), 54, Math.max(54, innerHeight - 90));
     sheet.style.height = `${next}px`;
     state.sheetHeight = next;
     e.preventDefault();
@@ -177,18 +218,16 @@ function installFloatingDrag() {
   handle.addEventListener("pointerdown", e => {
     if (!state.floating || e.button !== 0) return;
     const r = sheet.getBoundingClientRect();
-    drag = {x:e.clientX, y:e.clientY, left:r.left, top:r.top};
+    drag = {x:e.clientX, y:e.clientY, left:r.left, top:r.top, width:r.width, height:r.height};
     handle.setPointerCapture?.(e.pointerId);
     e.preventDefault(); e.stopImmediatePropagation();
   }, true);
   handle.addEventListener("pointermove", e => {
     if (!drag || !state.floating) return;
-    const scaledW = sheet.getBoundingClientRect().width;
-    const scaledH = sheet.getBoundingClientRect().height;
-    const left = clamp(drag.left + e.clientX - drag.x, 0, Math.max(0, innerWidth - Math.min(100, scaledW)));
-    const top = clamp(drag.top + e.clientY - drag.y, 0, Math.max(0, innerHeight - 80));
+    const left = fit(drag.left + e.clientX - drag.x, EDGE, Math.max(EDGE, innerWidth - drag.width - EDGE));
+    const top = fit(drag.top + e.clientY - drag.y, EDGE, Math.max(EDGE, innerHeight - drag.height - EDGE));
     state.floatingLeft = left;
-    state.floatingBottom = Math.max(0, innerHeight - top - scaledH);
+    state.floatingBottom = Math.max(EDGE, innerHeight - top - drag.height);
     applyState();
     e.preventDefault();
   }, true);
@@ -212,14 +251,14 @@ function installMenuDrag() {
   handle.addEventListener("pointerdown", e => {
     if (e.button !== 0) return;
     const r = menu.getBoundingClientRect();
-    drag = {x:e.clientX, y:e.clientY, left:r.left, top:r.top};
+    drag = {x:e.clientX, y:e.clientY, left:r.left, top:r.top, width:r.width, height:r.height};
     handle.setPointerCapture?.(e.pointerId);
     e.preventDefault(); e.stopPropagation();
   });
   handle.addEventListener("pointermove", e => {
     if (!drag) return;
-    state.menuLeft = clamp(drag.left + e.clientX - drag.x, 6, Math.max(6, innerWidth - 120));
-    state.menuTop = clamp(drag.top + e.clientY - drag.y, 6, Math.max(6, innerHeight - 80));
+    state.menuLeft = fit(drag.left + e.clientX - drag.x, 6, Math.max(6, innerWidth - drag.width - 6));
+    state.menuTop = fit(drag.top + e.clientY - drag.y, 6, Math.max(6, innerHeight - drag.height - 6));
     applyState();
     e.preventDefault();
   });
@@ -233,8 +272,10 @@ function installResizePersistence() {
   const sheet = $("sheet"), menu = $("menu");
   if (sheet) new ResizeObserver(() => {
     if (!state.floating || sheet.offsetWidth <= 0 || sheet.offsetHeight <= 0) return;
-    state.floatingWidth = sheet.offsetWidth;
-    state.floatingHeight = sheet.offsetHeight;
+    const scaleNow = clamp(+state.scale || 1, .7, 1.35);
+    const r = sheet.getBoundingClientRect();
+    state.floatingWidth = r.width / scaleNow;
+    state.floatingHeight = r.height / scaleNow;
     save();
   }).observe(sheet);
   if (menu) new ResizeObserver(() => {
@@ -245,10 +286,26 @@ function installResizePersistence() {
   }).observe(menu);
 }
 
+function handleViewportChange() {
+  applyState();
+  save();
+}
+
+addEventListener("ouroboros:collapse-sheet", () => {
+  if (state.floating) return;
+  state.sheetHeight = null;
+  const sheet = $("sheet"), chevron = $("handleChevron");
+  if (sheet) { sheet.style.height = ""; sheet.classList.remove("expanded"); }
+  if (chevron) chevron.textContent = "︿";
+  save();
+});
+
 applyState();
 installInterfaceControls();
 installSheetResize();
 installFloatingDrag();
 installMenuDrag();
 installResizePersistence();
-addEventListener("resize", applyState);
+addEventListener("resize", handleViewportChange);
+addEventListener("orientationchange", () => requestAnimationFrame(handleViewportChange));
+window.visualViewport?.addEventListener("resize", handleViewportChange);
