@@ -1,0 +1,39 @@
+name: ChatGPT PS1 outline validation
+
+on:
+  push:
+    branches:
+      - chatgpt-v1-task12
+    paths:
+      - .github/workflows/chatgpt-render-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-validate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt-v1-task12
+          fetch-depth: 0
+      - name: Apply outline fix
+        run: python scripts/chatgpt_render_fix.py
+      - name: Validate JavaScript
+        run: node --check js/app.js
+      - name: Verify renderer invariants
+        run: |
+          grep -q 'function enforceBiteVisual' js/app.js
+          grep -q 'function drawFacetSection' js/app.js
+          grep -q 'function drawGazeSparkles' js/app.js
+          grep -q 'const earth={x:0,y:0,r:2.50' js/app.js
+      - name: Commit validated fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/chatgpt-render-fix.yml scripts/chatgpt_render_fix.py
+          git add js/app.js
+          git commit -m "polish PS1 endpoint outlines"
+          git push origin HEAD:chatgpt-v1-task12
